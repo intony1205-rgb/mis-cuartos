@@ -617,6 +617,25 @@ export default function App() {
   const [saving, setSaving]             = useState(false)
   const [deleting, setDeleting]         = useState(false)
   const [error, setError]               = useState(null)
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [yaInstalada, setYaInstalada]     = useState(false)
+
+  // Capturar evento instalación PWA
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setYaInstalada(true); return
+    }
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') { setInstallPrompt(null); setYaInstalada(true) }
+  }
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY) === '1') setAutenticado(true)
@@ -703,6 +722,18 @@ export default function App() {
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#4ade80' }} />{alDia} al día</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#f87171' }} />{deuda} adeudan</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#a78bfa' }} />{totalMeses} pagos</div>
+            {!yaInstalada && installPrompt && (
+              <button onClick={handleInstall} style={{
+                background: '#f59e0b', border: 'none',
+                borderRadius: 99, padding: '5px 12px', color: '#fff',
+                fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                fontFamily: "'Sora', sans-serif",
+                boxShadow: '0 2px 8px rgba(245,158,11,.4)',
+                animation: 'pulse 2s infinite'
+              }}>
+                📲 Instalar app
+              </button>
+            )}
             <button onClick={handleLogout} style={{
               background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
               borderRadius: 99, padding: '5px 12px', color: '#e2e8f0',
