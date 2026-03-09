@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 
+// ── Contraseña ────────────────────────────────────────────────────────
+const APP_PASSWORD = '33595656'
+const SESSION_KEY  = 'miscuartos_auth'
+
 // ── Helpers ──────────────────────────────────────────────────────────
 function parseDate(str) {
   if (!str) return null
@@ -27,7 +31,125 @@ function mascaraFecha(val) {
   return v
 }
 
-// ── Summary Row (ahora con 4 tarjetas) ───────────────────────────────
+// ── Login Screen ──────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [pass, setPass]     = useState('')
+  const [error, setError]   = useState(false)
+  const [visible, setVisible] = useState(false)
+
+  const handleLogin = () => {
+    if (pass === APP_PASSWORD) {
+      sessionStorage.setItem(SESSION_KEY, '1')
+      onLogin()
+    } else {
+      setError(true)
+      setPass('')
+      setTimeout(() => setError(false), 2500)
+    }
+  }
+
+  const handleKey = (e) => { if (e.key === 'Enter') handleLogin() }
+
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #0f2540 0%, #1a3a5c 60%, #234b75 100%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 20, fontFamily: "'Sora', sans-serif"
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 24, padding: '40px 36px',
+        width: '100%', maxWidth: 380,
+        boxShadow: '0 24px 60px rgba(0,0,0,.3)',
+        animation: 'fadeUp .4s ease'
+      }}>
+        {/* Ícono */}
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{
+            width: 70, height: 70, background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+            borderRadius: 20, display: 'inline-flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: 34,
+            boxShadow: '0 8px 20px rgba(13,148,136,.4)',
+            marginBottom: 16
+          }}>🏠</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: '#0f2540', letterSpacing: '-0.5px' }}>
+            MisCuartos
+          </div>
+          <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+            Ingresa tu contraseña para continuar
+          </div>
+        </div>
+
+        {/* Input */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 8 }}>
+            Contraseña
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={visible ? 'text' : 'password'}
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="••••••••"
+              autoFocus
+              style={{
+                width: '100%', padding: '12px 44px 12px 14px',
+                border: `2px solid ${error ? '#dc2626' : '#e2e8f0'}`,
+                borderRadius: 10, fontSize: 16,
+                fontFamily: "'DM Mono', monospace",
+                letterSpacing: 3, outline: 'none',
+                background: error ? '#fff1f2' : '#fafafa',
+                transition: 'border-color .2s, background .2s',
+                boxSizing: 'border-box'
+              }}
+            />
+            <button
+              onClick={() => setVisible(v => !v)}
+              style={{
+                position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', fontSize: 18,
+                color: '#94a3b8', padding: 0
+              }}
+            >
+              {visible ? '🙈' : '👁️'}
+            </button>
+          </div>
+          {error && (
+            <p style={{ color: '#dc2626', fontSize: 12, marginTop: 6, fontWeight: 500 }}>
+              ❌ Contraseña incorrecta. Inténtalo de nuevo.
+            </p>
+          )}
+        </div>
+
+        {/* Botón */}
+        <button
+          onClick={handleLogin}
+          style={{
+            width: '100%', padding: '13px',
+            background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+            color: '#fff', border: 'none', borderRadius: 10,
+            fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            fontFamily: "'Sora', sans-serif",
+            boxShadow: '0 4px 14px rgba(13,148,136,.4)',
+            transition: 'opacity .2s'
+          }}
+        >
+          Entrar →
+        </button>
+      </div>
+
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px) }
+          to   { opacity: 1; transform: translateY(0) }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ── Summary Row ───────────────────────────────────────────────────────
 function SummaryRow({ total, alDia, deuda, totalMeses }) {
   return (
     <div className="summary-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
@@ -65,10 +187,7 @@ function InquilinoCard({ inq, onEdit, onDelete }) {
           {aldia ? '✓ Al día' : '✗ Adeuda'}
         </span>
       </div>
-
       <div className="card-name">{inq.nombre}</div>
-
-      {/* Badge de meses */}
       <div style={{ marginBottom: 12 }}>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -80,7 +199,6 @@ function InquilinoCard({ inq, onEdit, onDelete }) {
           📅 {meses} {meses === 1 ? 'mes alquilado' : 'meses alquilados'}
         </span>
       </div>
-
       <div className="card-meta">
         <div className="meta-row">
           <span className="meta-label">Monto mensual</span>
@@ -105,20 +223,14 @@ function InquilinoCard({ inq, onEdit, onDelete }) {
           </div>
         )}
       </div>
-
       <div className="card-actions">
-        <button className="btn-card btn-edit" onClick={() => onEdit(inq)}>
-          ✏️ Registrar pago
-        </button>
-        <button className="btn-card btn-delete" onClick={() => onDelete(inq)}>
-          🚪 Dar de baja
-        </button>
+        <button className="btn-card btn-edit" onClick={() => onEdit(inq)}>✏️ Registrar pago</button>
+        <button className="btn-card btn-delete" onClick={() => onDelete(inq)}>🚪 Dar de baja</button>
       </div>
     </div>
   )
 }
 
-// ── Empty State ───────────────────────────────────────────────────────
 function EmptyState({ vista }) {
   const msgs = {
     todos: { icon: '🏘️', title: 'Sin inquilinos aún', sub: 'Agrega el primer inquilino con el botón de arriba.' },
@@ -135,7 +247,6 @@ function EmptyState({ vista }) {
   )
 }
 
-// ── Form Panel ────────────────────────────────────────────────────────
 function FormPanel({ initial, onSave, onCancel, saving }) {
   const blank = { cuarto: '', nombre: '', monto: '', ultimo_pago: '' }
   const [form, setForm] = useState(
@@ -170,18 +281,16 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
       <div className="form-title">
         {esEdicion ? '✏️ Registrar nuevo pago' : '➕ Nuevo inquilino'}
       </div>
-
       {esEdicion && (
         <div style={{
           background: '#f5f3ff', border: '1px solid #ddd6fe',
           borderRadius: 10, padding: '10px 14px', marginBottom: 20,
           fontSize: 13, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: 8
         }}>
-          📅 Al guardar, se sumará <strong>+1 mes</strong> al contador de <strong>{initial.nombre}</strong>
+          📅 Al guardar se sumará <strong>+1 mes</strong> a <strong>{initial.nombre}</strong>
           {' '}(actualmente: {initial.total_pagos || 0} {(initial.total_pagos || 0) === 1 ? 'mes' : 'meses'})
         </div>
       )}
-
       <div className="form-row">
         <div className="form-group">
           <label className="form-label">N° de cuarto *</label>
@@ -196,14 +305,12 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
           {errors.monto && <p className="hint" style={{ color: '#dc2626' }}>{errors.monto}</p>}
         </div>
       </div>
-
       <div className="form-group">
         <label className="form-label">Nombre completo *</label>
         <input className="form-input" placeholder="Ej: Ana Torres Quispe"
           value={form.nombre} onChange={e => set('nombre', e.target.value)} />
         {errors.nombre && <p className="hint" style={{ color: '#dc2626' }}>{errors.nombre}</p>}
       </div>
-
       <div className="form-group">
         <label className="form-label">Fecha del pago *</label>
         <input className="form-input mono" placeholder="dd/mm/aaaa"
@@ -214,7 +321,6 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
           ? <p className="hint" style={{ color: '#dc2626' }}>{errors.ultimo_pago}</p>
           : <p className="hint">Formato: día/mes/año — Ej: 15/03/2025</p>}
       </div>
-
       <div className="form-actions">
         <button className="btn-cancel" onClick={onCancel} disabled={saving}>Cancelar</button>
         <button className="btn-submit" onClick={handleSubmit} disabled={saving}>
@@ -225,7 +331,6 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
   )
 }
 
-// ── Modal ─────────────────────────────────────────────────────────────
 function Modal({ inquilino, onConfirm, onCancel, deleting }) {
   return (
     <div className="overlay" onClick={onCancel}>
@@ -264,6 +369,7 @@ function Spinner() {
 
 // ── Main App ──────────────────────────────────────────────────────────
 export default function App() {
+  const [autenticado, setAutenticado]   = useState(false)
   const [inquilinos, setInquilinos]     = useState([])
   const [vista, setVista]               = useState('todos')
   const [editData, setEditData]         = useState(null)
@@ -274,12 +380,16 @@ export default function App() {
   const [deleting, setDeleting]         = useState(false)
   const [error, setError]               = useState(null)
 
+  // Revisar sesión al cargar
+  useEffect(() => {
+    if (sessionStorage.getItem(SESSION_KEY) === '1') setAutenticado(true)
+  }, [])
+
   const notify = useCallback((msg, tipo = 'ok') => {
     setToast({ msg, tipo })
     setTimeout(() => setToast(null), 3000)
   }, [])
 
-  // ── Cargar desde Supabase ──
   const cargarInquilinos = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -287,67 +397,38 @@ export default function App() {
       .from('inquilinos')
       .select('*')
       .order('created_at', { ascending: true })
-
     if (error) {
       setError('No se pudo conectar. Revisa tu conexión a internet.')
-      console.error(error)
     } else {
       setInquilinos(data || [])
     }
     setLoading(false)
   }, [])
 
-  useEffect(() => { cargarInquilinos() }, [cargarInquilinos])
+  useEffect(() => {
+    if (autenticado) cargarInquilinos()
+  }, [autenticado, cargarInquilinos])
 
-  // ── Guardar ──
   const handleSave = async (formData) => {
     setSaving(true)
-
     if (editData && editData.id) {
-      // Registrar pago → suma 1 mes automáticamente
       const nuevoTotal = (editData.total_pagos || 0) + 1
       const { error } = await supabase
         .from('inquilinos')
-        .update({
-          cuarto:      formData.cuarto,
-          nombre:      formData.nombre,
-          monto:       formData.monto,
-          ultimo_pago: formData.ultimo_pago,
-          total_pagos: nuevoTotal,
-        })
+        .update({ cuarto: formData.cuarto, nombre: formData.nombre, monto: formData.monto, ultimo_pago: formData.ultimo_pago, total_pagos: nuevoTotal })
         .eq('id', editData.id)
-
       if (error) { notify('❌ Error al actualizar. Intenta de nuevo.', 'err') }
-      else {
-        notify(`✓ Pago registrado — ${nuevoTotal} ${nuevoTotal === 1 ? 'mes' : 'meses'} acumulados`)
-        await cargarInquilinos()
-        setEditData(null)
-        setVista('todos')
-      }
+      else { notify(`✓ Pago registrado — ${nuevoTotal} ${nuevoTotal === 1 ? 'mes' : 'meses'} acumulados`); await cargarInquilinos(); setEditData(null); setVista('todos') }
     } else {
-      // Nuevo inquilino → empieza en 1 mes
       const { error } = await supabase
         .from('inquilinos')
-        .insert([{
-          cuarto:      formData.cuarto,
-          nombre:      formData.nombre,
-          monto:       formData.monto,
-          ultimo_pago: formData.ultimo_pago,
-          total_pagos: 1,
-        }])
-
+        .insert([{ cuarto: formData.cuarto, nombre: formData.nombre, monto: formData.monto, ultimo_pago: formData.ultimo_pago, total_pagos: 1 }])
       if (error) { notify('❌ Error al registrar. Intenta de nuevo.', 'err') }
-      else {
-        notify('✓ Inquilino registrado (1er mes)')
-        await cargarInquilinos()
-        setEditData(null)
-        setVista('todos')
-      }
+      else { notify('✓ Inquilino registrado (1er mes)'); await cargarInquilinos(); setEditData(null); setVista('todos') }
     }
     setSaving(false)
   }
 
-  // ── Eliminar ──
   const handleDelete = async () => {
     setDeleting(true)
     const { error } = await supabase.from('inquilinos').delete().eq('id', deleteTarget.id)
@@ -357,11 +438,16 @@ export default function App() {
     setDeleteTarget(null)
   }
 
+  const handleLogout = () => {
+    sessionStorage.removeItem(SESSION_KEY)
+    setAutenticado(false)
+    setInquilinos([])
+  }
+
   const openEdit   = (inq) => { setEditData(inq); setVista('form') }
   const openNew    = ()    => { setEditData(null); setVista('form') }
   const cancelForm = ()    => { setEditData(null); setVista('todos') }
 
-  // ── Stats ──
   const total      = inquilinos.length
   const alDia      = inquilinos.filter(i => isAlDia(i.ultimo_pago)).length
   const deuda      = total - alDia
@@ -379,6 +465,9 @@ export default function App() {
     { key: 'deuda', label: 'Adeudan', icon: '⚠️', badge: deuda, badgeCls: 'warn' },
   ]
 
+  // ── Mostrar login si no está autenticado ──
+  if (!autenticado) return <LoginScreen onLogin={() => setAutenticado(true)} />
+
   return (
     <div className="app-shell">
       <header className="header">
@@ -394,6 +483,14 @@ export default function App() {
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#4ade80' }} />{alDia} al día</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#f87171' }} />{deuda} adeudan</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#a78bfa' }} />{totalMeses} pagos</div>
+            <button onClick={handleLogout} style={{
+              background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
+              borderRadius: 99, padding: '5px 12px', color: '#e2e8f0',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              fontFamily: "'Sora', sans-serif"
+            }}>
+              🔒 Salir
+            </button>
           </div>
         </div>
       </header>
@@ -417,11 +514,9 @@ export default function App() {
         {vista === 'form' && (
           <FormPanel initial={editData} onSave={handleSave} onCancel={cancelForm} saving={saving} />
         )}
-
         {vista !== 'form' && (
           <>
             <SummaryRow total={total} alDia={alDia} deuda={deuda} totalMeses={totalMeses} />
-
             <div className="section-hd">
               <div>
                 <div className="section-title">
@@ -437,7 +532,6 @@ export default function App() {
               </div>
               <button className="btn-primary" onClick={openNew}><span>＋</span> Agregar</button>
             </div>
-
             {error && (
               <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', marginBottom: 20, color: '#991b1b', fontSize: 14 }}>
                 ⚠️ {error}
@@ -446,7 +540,6 @@ export default function App() {
                 </button>
               </div>
             )}
-
             {loading
               ? <Spinner />
               : listaMostrada.length === 0
@@ -469,7 +562,6 @@ export default function App() {
         <Modal inquilino={deleteTarget} onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)} deleting={deleting} />
       )}
-
       {toast && <Toast msg={toast.msg} tipo={toast.tipo} />}
     </div>
   )
