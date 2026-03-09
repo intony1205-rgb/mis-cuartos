@@ -27,13 +27,13 @@ function mascaraFecha(val) {
   return v
 }
 
-// ── Sub-components ───────────────────────────────────────────────────
-function SummaryRow({ total, alDia, deuda }) {
+// ── Summary Row (ahora con 4 tarjetas) ───────────────────────────────
+function SummaryRow({ total, alDia, deuda, totalMeses }) {
   return (
-    <div className="summary-row">
+    <div className="summary-row" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
       <div className="summary-card total">
         <div className="summary-num">{total}</div>
-        <div className="summary-lbl">Total inquilinos</div>
+        <div className="summary-lbl">Inquilinos</div>
       </div>
       <div className="summary-card ok">
         <div className="summary-num">{alDia}</div>
@@ -43,13 +43,19 @@ function SummaryRow({ total, alDia, deuda }) {
         <div className="summary-num">{deuda}</div>
         <div className="summary-lbl">Adeudan</div>
       </div>
+      <div className="summary-card" style={{ borderTop: '3px solid #7c3aed' }}>
+        <div className="summary-num" style={{ color: '#7c3aed' }}>{totalMeses}</div>
+        <div className="summary-lbl">Pagos totales</div>
+      </div>
     </div>
   )
 }
 
+// ── Inquilino Card ────────────────────────────────────────────────────
 function InquilinoCard({ inq, onEdit, onDelete }) {
   const aldia = isAlDia(inq.ultimo_pago)
   const dias  = diasDesde(inq.ultimo_pago)
+  const meses = inq.total_pagos || 0
 
   return (
     <div className="card">
@@ -59,11 +65,32 @@ function InquilinoCard({ inq, onEdit, onDelete }) {
           {aldia ? '✓ Al día' : '✗ Adeuda'}
         </span>
       </div>
+
       <div className="card-name">{inq.nombre}</div>
+
+      {/* Badge de meses */}
+      <div style={{ marginBottom: 12 }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          background: '#f5f3ff', color: '#7c3aed',
+          fontSize: 12, fontWeight: 700,
+          padding: '5px 12px', borderRadius: 99,
+          border: '1px solid #ddd6fe'
+        }}>
+          📅 {meses} {meses === 1 ? 'mes alquilado' : 'meses alquilados'}
+        </span>
+      </div>
+
       <div className="card-meta">
         <div className="meta-row">
           <span className="meta-label">Monto mensual</span>
           <span className="meta-val amount">S/ {Number(inq.monto).toFixed(2)}</span>
+        </div>
+        <div className="meta-row">
+          <span className="meta-label">Total acumulado</span>
+          <span className="meta-val" style={{ color: '#7c3aed', fontWeight: 700 }}>
+            S/ {(Number(inq.monto) * meses).toFixed(2)}
+          </span>
         </div>
         <div className="meta-row">
           <span className="meta-label">Último pago</span>
@@ -78,6 +105,7 @@ function InquilinoCard({ inq, onEdit, onDelete }) {
           </div>
         )}
       </div>
+
       <div className="card-actions">
         <button className="btn-card btn-edit" onClick={() => onEdit(inq)}>
           ✏️ Registrar pago
@@ -90,6 +118,7 @@ function InquilinoCard({ inq, onEdit, onDelete }) {
   )
 }
 
+// ── Empty State ───────────────────────────────────────────────────────
 function EmptyState({ vista }) {
   const msgs = {
     todos: { icon: '🏘️', title: 'Sin inquilinos aún', sub: 'Agrega el primer inquilino con el botón de arriba.' },
@@ -106,6 +135,7 @@ function EmptyState({ vista }) {
   )
 }
 
+// ── Form Panel ────────────────────────────────────────────────────────
 function FormPanel({ initial, onSave, onCancel, saving }) {
   const blank = { cuarto: '', nombre: '', monto: '', ultimo_pago: '' }
   const [form, setForm] = useState(
@@ -133,11 +163,24 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
     onSave({ ...form, monto: Number(form.monto) })
   }
 
+  const esEdicion = !!initial
+
   return (
     <div className="form-panel">
       <div className="form-title">
-        {initial ? '✏️ Editar / Registrar pago' : '➕ Nuevo inquilino'}
+        {esEdicion ? '✏️ Registrar nuevo pago' : '➕ Nuevo inquilino'}
       </div>
+
+      {esEdicion && (
+        <div style={{
+          background: '#f5f3ff', border: '1px solid #ddd6fe',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 20,
+          fontSize: 13, color: '#6d28d9', display: 'flex', alignItems: 'center', gap: 8
+        }}>
+          📅 Al guardar, se sumará <strong>+1 mes</strong> al contador de <strong>{initial.nombre}</strong>
+          {' '}(actualmente: {initial.total_pagos || 0} {(initial.total_pagos || 0) === 1 ? 'mes' : 'meses'})
+        </div>
+      )}
 
       <div className="form-row">
         <div className="form-group">
@@ -162,7 +205,7 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
       </div>
 
       <div className="form-group">
-        <label className="form-label">Última fecha de pago *</label>
+        <label className="form-label">Fecha del pago *</label>
         <input className="form-input mono" placeholder="dd/mm/aaaa"
           value={form.ultimo_pago}
           onChange={e => set('ultimo_pago', mascaraFecha(e.target.value))}
@@ -175,13 +218,14 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
       <div className="form-actions">
         <button className="btn-cancel" onClick={onCancel} disabled={saving}>Cancelar</button>
         <button className="btn-submit" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Guardando...' : initial ? 'Guardar cambios' : 'Registrar inquilino'}
+          {saving ? 'Guardando...' : esEdicion ? '✓ Confirmar pago (+1 mes)' : 'Registrar inquilino'}
         </button>
       </div>
     </div>
   )
 }
 
+// ── Modal ─────────────────────────────────────────────────────────────
 function Modal({ inquilino, onConfirm, onCancel, deleting }) {
   return (
     <div className="overlay" onClick={onCancel}>
@@ -218,17 +262,17 @@ function Spinner() {
   )
 }
 
-// ── Main App ─────────────────────────────────────────────────────────
+// ── Main App ──────────────────────────────────────────────────────────
 export default function App() {
-  const [inquilinos, setInquilinos] = useState([])
-  const [vista, setVista]           = useState('todos')
-  const [editData, setEditData]     = useState(null)
+  const [inquilinos, setInquilinos]     = useState([])
+  const [vista, setVista]               = useState('todos')
+  const [editData, setEditData]         = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [toast, setToast]           = useState(null)
-  const [loading, setLoading]       = useState(true)
-  const [saving, setSaving]         = useState(false)
-  const [deleting, setDeleting]     = useState(false)
-  const [error, setError]           = useState(null)
+  const [toast, setToast]               = useState(null)
+  const [loading, setLoading]           = useState(true)
+  const [saving, setSaving]             = useState(false)
+  const [deleting, setDeleting]         = useState(false)
+  const [error, setError]               = useState(null)
 
   const notify = useCallback((msg, tipo = 'ok') => {
     setToast({ msg, tipo })
@@ -255,24 +299,50 @@ export default function App() {
 
   useEffect(() => { cargarInquilinos() }, [cargarInquilinos])
 
-  // ── Guardar (nuevo o editar) ──
+  // ── Guardar ──
   const handleSave = async (formData) => {
     setSaving(true)
+
     if (editData && editData.id) {
+      // Registrar pago → suma 1 mes automáticamente
+      const nuevoTotal = (editData.total_pagos || 0) + 1
       const { error } = await supabase
         .from('inquilinos')
-        .update({ cuarto: formData.cuarto, nombre: formData.nombre, monto: formData.monto, ultimo_pago: formData.ultimo_pago })
+        .update({
+          cuarto:      formData.cuarto,
+          nombre:      formData.nombre,
+          monto:       formData.monto,
+          ultimo_pago: formData.ultimo_pago,
+          total_pagos: nuevoTotal,
+        })
         .eq('id', editData.id)
 
       if (error) { notify('❌ Error al actualizar. Intenta de nuevo.', 'err') }
-      else { notify('✓ Pago registrado correctamente'); await cargarInquilinos(); setEditData(null); setVista('todos') }
+      else {
+        notify(`✓ Pago registrado — ${nuevoTotal} ${nuevoTotal === 1 ? 'mes' : 'meses'} acumulados`)
+        await cargarInquilinos()
+        setEditData(null)
+        setVista('todos')
+      }
     } else {
+      // Nuevo inquilino → empieza en 1 mes
       const { error } = await supabase
         .from('inquilinos')
-        .insert([{ cuarto: formData.cuarto, nombre: formData.nombre, monto: formData.monto, ultimo_pago: formData.ultimo_pago }])
+        .insert([{
+          cuarto:      formData.cuarto,
+          nombre:      formData.nombre,
+          monto:       formData.monto,
+          ultimo_pago: formData.ultimo_pago,
+          total_pagos: 1,
+        }])
 
       if (error) { notify('❌ Error al registrar. Intenta de nuevo.', 'err') }
-      else { notify('✓ Inquilino registrado'); await cargarInquilinos(); setEditData(null); setVista('todos') }
+      else {
+        notify('✓ Inquilino registrado (1er mes)')
+        await cargarInquilinos()
+        setEditData(null)
+        setVista('todos')
+      }
     }
     setSaving(false)
   }
@@ -291,9 +361,11 @@ export default function App() {
   const openNew    = ()    => { setEditData(null); setVista('form') }
   const cancelForm = ()    => { setEditData(null); setVista('todos') }
 
-  const total = inquilinos.length
-  const alDia = inquilinos.filter(i => isAlDia(i.ultimo_pago)).length
-  const deuda = total - alDia
+  // ── Stats ──
+  const total      = inquilinos.length
+  const alDia      = inquilinos.filter(i => isAlDia(i.ultimo_pago)).length
+  const deuda      = total - alDia
+  const totalMeses = inquilinos.reduce((acc, i) => acc + (i.total_pagos || 0), 0)
 
   const listaMostrada = inquilinos.filter(i => {
     if (vista === 'aldia') return  isAlDia(i.ultimo_pago)
@@ -321,6 +393,7 @@ export default function App() {
           <div className="header-stats">
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#4ade80' }} />{alDia} al día</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#f87171' }} />{deuda} adeudan</div>
+            <div className="stat-pill"><span className="stat-dot" style={{ background: '#a78bfa' }} />{totalMeses} pagos</div>
           </div>
         </div>
       </header>
@@ -347,7 +420,7 @@ export default function App() {
 
         {vista !== 'form' && (
           <>
-            <SummaryRow total={total} alDia={alDia} deuda={deuda} />
+            <SummaryRow total={total} alDia={alDia} deuda={deuda} totalMeses={totalMeses} />
 
             <div className="section-hd">
               <div>
@@ -362,7 +435,7 @@ export default function App() {
                   {vista === 'todos' && `${total} inquilino${total !== 1 ? 's' : ''} registrado${total !== 1 ? 's' : ''}`}
                 </div>
               </div>
-              <button className="btn-primary" onClick={openNew}><span>＋</span> Agregar inquilino</button>
+              <button className="btn-primary" onClick={openNew}><span>＋</span> Agregar</button>
             </div>
 
             {error && (
