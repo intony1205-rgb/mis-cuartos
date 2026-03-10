@@ -627,6 +627,7 @@ export default function App() {
     }
     const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setYaInstalada(true))
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
@@ -722,18 +723,6 @@ export default function App() {
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#4ade80' }} />{alDia} al día</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#f87171' }} />{deuda} adeudan</div>
             <div className="stat-pill"><span className="stat-dot" style={{ background: '#a78bfa' }} />{totalMeses} pagos</div>
-            {!yaInstalada && installPrompt && (
-              <button onClick={handleInstall} style={{
-                background: '#f59e0b', border: 'none',
-                borderRadius: 99, padding: '5px 12px', color: '#fff',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                fontFamily: "'Sora', sans-serif",
-                boxShadow: '0 2px 8px rgba(245,158,11,.4)',
-                animation: 'pulse 2s infinite'
-              }}>
-                📲 Instalar app
-              </button>
-            )}
             <button onClick={handleLogout} style={{
               background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)',
               borderRadius: 99, padding: '5px 12px', color: '#e2e8f0',
@@ -759,6 +748,47 @@ export default function App() {
       </nav>
 
       <main className="main">
+        {/* Banner de instalación — siempre visible si no está instalada */}
+        {!yaInstalada && (
+          <div style={{
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            borderRadius: 14, padding: '14px 18px', marginBottom: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 12, flexWrap: 'wrap',
+            boxShadow: '0 4px 14px rgba(245,158,11,.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 24 }}>📲</span>
+              <div>
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
+                  Instala la app en tu celular
+                </div>
+                <div style={{ color: '#fef3c7', fontSize: 12, marginTop: 2 }}>
+                  Android: menú ⋮ → "Instalar app" · iPhone: botón ⬆️ → "Agregar a pantalla de inicio"
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {installPrompt && (
+                <button onClick={handleInstall} style={{
+                  background: '#fff', color: '#d97706', border: 'none',
+                  borderRadius: 8, padding: '8px 14px', fontSize: 13,
+                  fontWeight: 700, cursor: 'pointer', fontFamily: "'Sora', sans-serif",
+                  whiteSpace: 'nowrap'
+                }}>
+                  ✓ Instalar ahora
+                </button>
+              )}
+              <button onClick={() => setYaInstalada(true)} style={{
+                background: 'rgba(255,255,255,.25)', color: '#fff', border: 'none',
+                borderRadius: 8, padding: '8px 12px', fontSize: 12,
+                cursor: 'pointer', fontFamily: "'Sora', sans-serif"
+              }}>
+                Ya la tengo ✕
+              </button>
+            </div>
+          </div>
+        )}
         {vista === 'form' && <FormPanel initial={editData} onSave={handleSave} onCancel={cancelForm} saving={saving} />}
 
         {vista === 'ingresos' && (
