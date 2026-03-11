@@ -512,60 +512,105 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
   const [errors, setErrors] = useState({})
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 
+  const esEdicion = !!initial
+
+  // Fecha de hoy en formato dd/mm/aaaa
+  const hoy = new Date()
+  const fechaHoy = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`
+
   const validate = () => {
     const e = {}
-    if (!form.cuarto.trim())  e.cuarto      = 'Ingresa el número de cuarto'
-    if (!form.nombre.trim())  e.nombre      = 'Ingresa el nombre completo'
-    if (!form.monto || isNaN(Number(form.monto)) || Number(form.monto) <= 0) e.monto = 'Ingresa un monto válido'
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(form.ultimo_pago)) e.ultimo_pago = 'Formato: dd/mm/aaaa'
+    if (!form.cuarto.trim())  e.cuarto  = 'Ingresa el número de cuarto'
+    if (!form.nombre.trim())  e.nombre  = 'Ingresa el nombre completo'
+    if (!form.monto || isNaN(Number(form.monto)) || Number(form.monto) <= 0)
+                              e.monto   = 'Ingresa un monto válido'
+    // Solo validar fecha en registro nuevo
+    if (!esEdicion && !/^\d{2}\/\d{2}\/\d{4}$/.test(form.ultimo_pago))
+                              e.ultimo_pago = 'Formato: dd/mm/aaaa'
     return e
   }
 
   const handleSubmit = () => {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
-    onSave({ ...form, monto: Number(form.monto) })
+    // Si es edición, usar fecha de hoy automáticamente
+    const dataFinal = esEdicion
+      ? { ...form, monto: Number(form.monto), ultimo_pago: fechaHoy }
+      : { ...form, monto: Number(form.monto) }
+    onSave(dataFinal)
   }
 
-  const esEdicion = !!initial
   return (
     <div className="form-panel">
-      <div className="form-title">{esEdicion ? '✏️ Registrar nuevo pago' : '➕ Nuevo inquilino'}</div>
+      <div className="form-title">{esEdicion ? '✏️ Registrar pago del mes' : '➕ Nuevo inquilino'}</div>
+
       {esEdicion && (
-        <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#6d28d9' }}>
+        <div style={{
+          background: '#f0fdf4', border: '1px solid #bbf7d0',
+          borderRadius: 10, padding: '12px 16px', marginBottom: 20,
+          fontSize: 13, color: '#166534'
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>📅 Fecha de pago</div>
+          <div style={{ fontSize: 15, fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
+            {fechaHoy} — hoy
+          </div>
+          <div style={{ fontSize: 12, color: '#4ade80', marginTop: 2 }}>
+            Se registrará automáticamente con la fecha de hoy
+          </div>
+        </div>
+      )}
+
+      {esEdicion && (
+        <div style={{
+          background: '#f5f3ff', border: '1px solid #ddd6fe',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 20,
+          fontSize: 13, color: '#6d28d9'
+        }}>
           📅 Al guardar se sumará <strong>+1 mes</strong> a <strong>{initial.nombre}</strong>
           {' '}(actualmente: {initial.total_pagos || 0} {(initial.total_pagos || 0) === 1 ? 'mes' : 'meses'})
         </div>
       )}
+
       <div className="form-row">
         <div className="form-group">
           <label className="form-label">N° de cuarto *</label>
-          <input className="form-input mono" placeholder="101" value={form.cuarto} onChange={e => set('cuarto', e.target.value)} />
+          <input className="form-input mono" placeholder="101"
+            value={form.cuarto} onChange={e => set('cuarto', e.target.value)} />
           {errors.cuarto && <p className="hint" style={{ color: '#dc2626' }}>{errors.cuarto}</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Monto mensual (S/) *</label>
-          <input className="form-input mono" placeholder="350" type="number" min="0" value={form.monto} onChange={e => set('monto', e.target.value)} />
+          <input className="form-input mono" placeholder="350" type="number" min="0"
+            value={form.monto} onChange={e => set('monto', e.target.value)} />
           {errors.monto && <p className="hint" style={{ color: '#dc2626' }}>{errors.monto}</p>}
         </div>
       </div>
+
       <div className="form-group">
         <label className="form-label">Nombre completo *</label>
-        <input className="form-input" placeholder="Ej: Ana Torres Quispe" value={form.nombre} onChange={e => set('nombre', e.target.value)} />
+        <input className="form-input" placeholder="Ej: Ana Torres Quispe"
+          value={form.nombre} onChange={e => set('nombre', e.target.value)} />
         {errors.nombre && <p className="hint" style={{ color: '#dc2626' }}>{errors.nombre}</p>}
       </div>
-      <div className="form-group">
-        <label className="form-label">Fecha del pago *</label>
-        <input className="form-input mono" placeholder="dd/mm/aaaa" value={form.ultimo_pago}
-          onChange={e => set('ultimo_pago', mascaraFecha(e.target.value))} maxLength={10} />
-        {errors.ultimo_pago
-          ? <p className="hint" style={{ color: '#dc2626' }}>{errors.ultimo_pago}</p>
-          : <p className="hint">Formato: día/mes/año — Ej: 15/03/2025</p>}
-      </div>
+
+      {/* Campo de fecha SOLO para registro nuevo */}
+      {!esEdicion && (
+        <div className="form-group">
+          <label className="form-label">Fecha del último pago *</label>
+          <input className="form-input mono" placeholder="dd/mm/aaaa"
+            value={form.ultimo_pago}
+            onChange={e => set('ultimo_pago', mascaraFecha(e.target.value))}
+            maxLength={10} />
+          {errors.ultimo_pago
+            ? <p className="hint" style={{ color: '#dc2626' }}>{errors.ultimo_pago}</p>
+            : <p className="hint">La fecha en que el inquilino pagó por última vez</p>}
+        </div>
+      )}
+
       <div className="form-actions">
         <button className="btn-cancel" onClick={onCancel} disabled={saving}>Cancelar</button>
         <button className="btn-submit" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Guardando...' : esEdicion ? '✓ Confirmar pago (+1 mes)' : 'Registrar inquilino'}
+          {saving ? 'Guardando...' : esEdicion ? `✓ Confirmar pago — ${fechaHoy}` : 'Registrar inquilino'}
         </button>
       </div>
     </div>
