@@ -619,6 +619,7 @@ export default function App() {
   const [error, setError]               = useState(null)
   const [installPrompt, setInstallPrompt] = useState(null)
   const [yaInstalada, setYaInstalada]     = useState(false)
+  const [busqueda, setBusqueda]           = useState('')
 
   // Capturar evento instalación PWA
   useEffect(() => {
@@ -694,9 +695,14 @@ export default function App() {
   const totalMeses = inquilinos.reduce((acc, i) => acc + (i.total_pagos || 0), 0)
 
   const listaMostrada = inquilinos.filter(i => {
-    if (vista === 'aldia') return  isAlDia(i.ultimo_pago)
-    if (vista === 'deuda') return !isAlDia(i.ultimo_pago)
-    return true
+    const matchVista = vista === 'aldia' ? isAlDia(i.ultimo_pago)
+                     : vista === 'deuda' ? !isAlDia(i.ultimo_pago)
+                     : true
+    const q = busqueda.toLowerCase().trim()
+    const matchBusqueda = !q || 
+      i.nombre.toLowerCase().includes(q) || 
+      i.cuarto.toLowerCase().includes(q)
+    return matchVista && matchBusqueda
   })
 
   const tabs = [
@@ -812,6 +818,39 @@ export default function App() {
                 </div>
               </div>
               <button className="btn-primary" onClick={openNew}><span>＋</span> Agregar</button>
+            </div>
+
+            {/* Barra de búsqueda */}
+            <div style={{ position: 'relative', marginBottom: 20 }}>
+              <span style={{
+                position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                fontSize: 16, color: '#94a3b8', pointerEvents: 'none'
+              }}>🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar por nombre o número de cuarto..."
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                style={{
+                  width: '100%', padding: '11px 40px 11px 42px',
+                  border: '1.5px solid #e2e8f0', borderRadius: 10,
+                  fontFamily: "'Sora', sans-serif", fontSize: 14,
+                  color: '#0f172a', background: '#fff', outline: 'none',
+                  boxSizing: 'border-box',
+                  transition: 'border-color .2s, box-shadow .2s',
+                  boxShadow: '0 1px 4px rgba(0,0,0,.05)'
+                }}
+                onFocus={e => { e.target.style.borderColor = '#0d9488'; e.target.style.boxShadow = '0 0 0 3px rgba(13,148,136,.12)' }}
+                onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = '0 1px 4px rgba(0,0,0,.05)' }}
+              />
+              {busqueda && (
+                <button onClick={() => setBusqueda('')} style={{
+                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                  background: '#94a3b8', border: 'none', borderRadius: '50%',
+                  width: 20, height: 20, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', cursor: 'pointer', color: '#fff', fontSize: 12
+                }}>✕</button>
+              )}
             </div>
             {error && (
               <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px 20px', marginBottom: 20, color: '#991b1b', fontSize: 14 }}>
