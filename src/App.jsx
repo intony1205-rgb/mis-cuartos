@@ -514,9 +514,10 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
 
   const esEdicion = !!initial
 
-  // Fecha de hoy en formato dd/mm/aaaa
+  // Fecha automática: mismo día que se registró, pero mes y año actuales
   const hoy = new Date()
-  const fechaHoy = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`
+  const diaOriginal = initial ? initial.ultimo_pago.split('/')[0] : String(hoy.getDate()).padStart(2,'0')
+  const fechaAuto = `${diaOriginal}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`
 
   const validate = () => {
     const e = {}
@@ -535,7 +536,7 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
     if (Object.keys(e).length) { setErrors(e); return }
     // Si es edición, usar fecha de hoy automáticamente
     const dataFinal = esEdicion
-      ? { ...form, monto: Number(form.monto), ultimo_pago: fechaHoy }
+      ? { ...form, monto: Number(form.monto), ultimo_pago: fechaAuto }
       : { ...form, monto: Number(form.monto) }
     onSave(dataFinal)
   }
@@ -552,10 +553,10 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
         }}>
           <div style={{ fontWeight: 700, marginBottom: 4 }}>📅 Fecha de pago</div>
           <div style={{ fontSize: 15, fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>
-            {fechaHoy} — hoy
+            {fechaAuto} — hoy
           </div>
           <div style={{ fontSize: 12, color: '#4ade80', marginTop: 2 }}>
-            Se registrará automáticamente con la fecha de hoy
+            Día de pago del inquilino (día {diaOriginal} de cada mes)
           </div>
         </div>
       )}
@@ -610,7 +611,7 @@ function FormPanel({ initial, onSave, onCancel, saving }) {
       <div className="form-actions">
         <button className="btn-cancel" onClick={onCancel} disabled={saving}>Cancelar</button>
         <button className="btn-submit" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Guardando...' : esEdicion ? `✓ Confirmar pago — ${fechaHoy}` : 'Registrar inquilino'}
+          {saving ? 'Guardando...' : esEdicion ? `✓ Confirmar pago — ${fechaAuto}` : 'Registrar inquilino'}
         </button>
       </div>
     </div>
